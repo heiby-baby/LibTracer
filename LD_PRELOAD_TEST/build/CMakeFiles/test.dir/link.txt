@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -Wl,--dependency-file=CMakeFiles/test.dir/link.d -shared -Wl,-soname,libtest.so -o libtest.so CMakeFiles/test.dir/lib.c.o

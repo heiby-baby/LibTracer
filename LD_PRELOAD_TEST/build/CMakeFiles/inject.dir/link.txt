@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -Wl,--dependency-file=CMakeFiles/inject.dir/link.d -shared -Wl,-soname,inject.so -o inject.so CMakeFiles/inject.dir/inject.c.o
