@@ -1,5 +1,0 @@
-/home/heiby/projects/LibTracer/LD_PRELOAD_TEST/build/CMakeFiles/test.dir
-/home/heiby/projects/LibTracer/LD_PRELOAD_TEST/build/CMakeFiles/main.dir
-/home/heiby/projects/LibTracer/LD_PRELOAD_TEST/build/CMakeFiles/inject.dir
-/home/heiby/projects/LibTracer/LD_PRELOAD_TEST/build/CMakeFiles/edit_cache.dir
-/home/heiby/projects/LibTracer/LD_PRELOAD_TEST/build/CMakeFiles/rebuild_cache.dir
