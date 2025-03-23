@@ -1,2 +1,3 @@
 .vscode
-
+.LD_PRELOAD_TEST/build
+.MUTEX_AND_SHM/build
