@@ -1,31 +1,17 @@
-Вызван malloc с размером: 14
-Вызван calloc с количеством: 14 и размером: 1
-Вызван open для файла: testfile.txt с флагами: 65 и режимом: 420
-Вызван write для файлового дескриптора: 3, размер: 13
-Вызван close для файлового дескриптора: 3
-Вызван open для файла: testfile.txt с флагами: 0 и режимом: 0
-Вызван read для файлового дескриптора: 3, размер: 13
-Вызван malloc с размером: 4096
-Вызван lseek для файлового дескриптора: 3, смещение: 0, whence: 0
-Вызван read для файлового дескриптора: 3, размер: 13
-Вызван close для файлового дескриптора: 3
-Вызван realloc с адресом: 0x5ca5b473e2a0 и размером: 16
-Вызван free с адресом: 0x5ca5b473e2a0
-Вызван free с адресом: 0x5ca5b473e2c0
+[1742855954.666] malloc: bytes=14, ptr=0x5f864fafa2a0
+[1742855954.666] open: filename='testfile.txt', flags=65, fd=3
+[1742855954.666] write: fd=3, buf=0x5f8636ce3015, count=13, bytes_written=13
+[1742855954.666] close: fd=3, ret=0
+[1742855954.666] open: filename='testfile.txt', flags=0, fd=3
+[1742855954.666] read: fd=3, buf=0x5f864fafa2a0, count=13, bytes_read=13
+[1742855954.666] malloc: bytes=4096, ptr=0x5f864fafa2e0
+[1742855954.666] lseek: fd=3, req_offset=0, whence=0, res_offset=0
+[1742855954.666] read: fd=3, buf=0x5f864fafa2c0, count=13, bytes_read=13
+[1742855954.666] close: fd=3, ret=0
+[1742855954.666] realloc: bytes=16, old_ptr=0x5f864fafa2a0, new_ptr=0x5f864fafa2a0
+[1742855954.666] free: ptr=0x5f864fafa2a0
+[1742855954.666] free: ptr=0x5f864fafa2c0
 Прочитано из файла: Hello, World!
 Прочитано после lseek: Hello, World!
 Новые данные в буфере: This is a test.
 Программа завершена.
-typedef enum{
-    LOG_MALLOC,
-    LOG_FREE,
-    LOG_REALLOC,
-    LOG_CALLOC,
-    LOG_OPEN,
-    LOG_CLOSE,
-    LOG_WRITE,
-    LOG_READ,
-    LOG_LSEEK
-} LogType;
-
-
