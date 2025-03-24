@@ -5,3 +5,4 @@ mkdir build
 cd build
 
 gcc -shared -fPIC -o memlib.so ../memlib.c -ldl
+gcc ../test.c -o test
