@@ -16,3 +16,16 @@
 Прочитано после lseek: Hello, World!
 Новые данные в буфере: This is a test.
 Программа завершена.
+typedef enum{
+    LOG_MALLOC,
+    LOG_FREE,
+    LOG_REALLOC,
+    LOG_CALLOC,
+    LOG_OPEN,
+    LOG_CLOSE,
+    LOG_WRITE,
+    LOG_READ,
+    LOG_LSEEK
+} LogType;
+
+

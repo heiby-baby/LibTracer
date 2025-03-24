@@ -7,15 +7,73 @@
 #include <string.h>
 #include <sys/syscall.h> 
 #include <unistd.h>       
+#include <linux/time.h>
+// Перечисление с числовыми значениями функциями
+typedef enum {
+    LOG_OPEN,
+    LOG_CLOSE,
+    LOG_LSEEK,
+    LOG_READ,
+    LOG_WRITE,
+    LOG_MALLOC,
+    LOG_CALLOC,
+    LOG_REALLOC,
+    LOG_FREE
+} LogType;
 
+
+// Структура в которой хранится наш лог
+struct LogEntry {
+    LogType type;
+    struct timespec timestamp;
+    union {
+        struct {
+            char filename[256];
+            int flags;
+            int file_descriptor;
+        } open;
+        struct {
+            int file_descriptor;
+            int return_code;
+        } close;
+        struct {
+            int file_descriptor;
+            off_t requested_offset;
+            int whence;
+            off_t resulted_offset;
+        } lseek;
+        struct {
+            int file_descriptor;
+            void* buffer_pointer;
+            int count;
+            int bytes_read;
+        } read;
+        struct {
+            int file_descriptor;
+            void* buffer_pointer;
+            int count;
+            int bytes_written;
+        } write;
+        struct {
+            int bytes_requested;
+            void * new_mem_pointer;
+
+        } malloc;
+        struct {
+            
+        } realloc;
+        struct {
+            
+        } free;
+    };
+} ;
 
 
 // Безопасная функция вывода, отладочкая
 // (Безопасная по причине того, что не вызывает рекурсвиных вызовов)
-void safe_print(const char* format, ...) {
+void save_print(const char* format, ...) {
     char buffer[128];  // Статический буфер на стеке
     va_list args;
-
     // Инициализируем va_list
     va_start(args, format);
 
@@ -29,6 +87,21 @@ void safe_print(const char* format, ...) {
     if (len > 0) {
         syscall(SYS_write, STDERR_FILENO, buffer, len);
     }
+}
+
+
+void create_log(LogType logType, ...) {
+    struct LogEntry log;
+    log.type = logType;
+    clock_gettime(CLOCK_REALTIME, &log.timestamp);
+    
+    va_list args;
+    va_start(args, logType);
+    
+    switch (logType) {
+    }
+    
+    va_end(args);
 }
 // Обёртка для malloc
 void* malloc(size_t size) {
@@ -46,11 +119,11 @@ void* malloc(size_t size) {
         }
     }
 
-    // Выводим информацию о вызове malloc
-    safe_print("Вызван malloc с размером: %zu\n", size);
-
     // Вызываем оригинальную функцию malloc
-    return original_malloc(size);
+    void* ptr = original_malloc(size);
+    // Выводим информацию о вызове malloc
+    create_log(LOG_MALLOC, size, ptr);
+    return ptr;
 }
 
 // Обёртка для free
@@ -70,7 +143,7 @@ void free(void* ptr) {
     }
 
     // Выводим информацию о вызове free
-    safe_print("Вызван free с адресом: %p\n", ptr);
+    create_log(LOG_FREE, ptr);
 
     // Вызываем оригинальную функцию free
     original_free(ptr);
@@ -92,34 +165,34 @@ void* realloc(void* ptr, size_t size) {
         }
     }
 
-    // Выводим информацию о вызове realloc
-    safe_print("Вызван realloc с адресом: %p и размером: %zu\n", ptr, size);
-
     // Вызываем оригинальную функцию realloc
-    return original_realloc(ptr, size);
+    void* new_ptr = original_realloc(ptr, size);
+    // Выводим информацию о вызове realloc
+    create_log(LOG_REALLOC, size, ptr, new_ptr);
+    return new_ptr;
 }
 
-// Обёртка для calloc
-void* calloc(size_t num, size_t size) {
-    // Создаём указатель на функцию с сигнатурой функции calloc
-    static void* (*original_calloc)(size_t, size_t) = NULL;
-    // Получаем указатель на оригинальную функцию calloc
-    if (!original_calloc) {
-        // RTLD_NEXT значит: получить realloc который был бы вызван,
-        // если бы не было обёртки
-        original_calloc = dlsym(RTLD_NEXT, "calloc");
-        if (!original_calloc) {
-            safe_print("Ошибка при получении оригинального calloc\n");
-            exit(1);
-        }
-    }
-
-    // Выводим информацию о вызове calloc
-    safe_print("Вызван calloc с количеством: %zu и размером: %zu\n", num, size);
-
-    // Вызываем оригинальную функцию calloc
-    return original_calloc(num, size);
-}
+// // Обёртка для calloc
+// void* calloc(size_t num, size_t size) {
+//     // Создаём указатель на функцию с сигнатурой функции calloc
+//     static void* (*original_calloc)(size_t, size_t) = NULL;
+//     // Получаем указатель на оригинальную функцию calloc
+//     if (!original_calloc) {
+//         // RTLD_NEXT значит: получить realloc который был бы вызван,
+//         // если бы не было обёртки
+//         original_calloc = dlsym(RTLD_NEXT, "calloc");
+//         if (!original_calloc) {
+//             safe_print("Ошибка при получении оригинального calloc\n");
+//             exit(1);
+//         }
+//     }
+//     void* ptr = original_calloc(num, size);
+//     // Выводим информацию о вызове calloc
+//     create_log(LOG_MALLOC, num * size, ptr); // Логируем как malloc, так как calloc - это malloc + memset
+//     return ptr;
+//     // Вызываем оригинальную функцию calloc
+//     return original_calloc(num, size);
+// }
 
 // Обёртка для open
 int open(const char* pathname, int flags, ...) {
