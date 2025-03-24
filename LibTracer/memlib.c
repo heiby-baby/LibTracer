@@ -60,10 +60,12 @@ struct LogEntry {
 
         } malloc;
         struct {
-            
+            int bytes_requested;
+            void * current_mem_pointer;
+            void * new_mem_pointer;
         } realloc;
         struct {
-            
+            void * mem_pointer;
         } free;
     };
 } ;
