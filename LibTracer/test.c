@@ -10,7 +10,7 @@ int main() {
     const char* new_data = "This is a test.";
     size_t data_len = strlen(data);
     size_t new_data_len = strlen(new_data);
-
+    printf("Начало программы\n");
     // Используем malloc для выделения памяти
     char* buffer = (char*)malloc(data_len + 1);
     if (!buffer) {
@@ -106,7 +106,7 @@ int main() {
         free(buffer2);
         return 1;
     }
-
+    sleep(1);
     // Используем realloc для изменения размера буфера
     buffer = (char*)realloc(buffer, new_data_len + 1);
     if (!buffer) {
