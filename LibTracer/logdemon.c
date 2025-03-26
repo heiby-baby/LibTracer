@@ -2,9 +2,11 @@
 #include <stdlib.h> // atoi()
 #include <fcntl.h> 
 #include <sys/mman.h>
-#include <unistd.h>
+#include <unistd.h> 
 #include <string.h>
 #include <time.h>
+#include <stdbool.h> //bool true false
+#include <getopt.h>
 
 #define SHM_NAME "/log_shm"
 #define SHM_SIZE (sizeof(struct LogEntry) * 100)
@@ -164,11 +166,60 @@ void format_log_entry(struct LogEntry *log, char *buffer, size_t buf_size) {
     }
 }
 
+void print_usage(const char *program_name) {
+    fprintf(stderr, "Usage: %s [OPTIONS] <output_file> <ms>\n", program_name);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -m, --memory    Log only memory-related functions (malloc, realloc, free)\n");
+    fprintf(stderr, "  -f, --file      Log only file-related functions (open, close, lseek, read, write)\n");
+    fprintf(stderr, "If no flags are specified, both memory and file functions are logged\n");
+}
+
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        fprintf(stderr, "Usage: %s <output_file> <ms>\n", argv[0]);
+    bool log_memory = false;
+    bool log_file = false;
+    
+    // Обработка аргументов командной строки
+    static struct option long_options[] = {
+        {"memory", no_argument, 0, 'm'},
+        {"file", no_argument, 0, 'f'},
+        {0, 0, 0, 0}
+    };
+    
+    int opt;
+    int option_index = 0;
+    while ((opt = getopt_long(argc, argv, "mf", long_options, &option_index))) {
+        if (opt == -1) break;
+        
+        switch (opt) {
+            case 'm':
+                log_memory = true;
+                break;
+            case 'f':
+                log_file = true;
+                break;
+            default:
+                print_usage(argv[0]);
+                return 1;
+        }
+    }
+    
+    // Если ни один флаг не указан, логируем всё
+    if (!log_memory && !log_file) {
+        log_memory = true;
+        log_file = true;
+    }
+    
+    // Проверяем оставшиеся аргументы (output_file и ms)
+    if (optind + 2 != argc) {
+        print_usage(argv[0]);
         return 1;
     }
+    
+    const char *output_file = argv[optind];
+    const char *ms_str = argv[optind + 1];
+    int ms = atoi(ms_str);
+
+
     shm_unlink(SHM_NAME);
     int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
@@ -197,7 +248,7 @@ int main(int argc, char *argv[]) {
     shm->tail = 0;
 
     // Открываем файл для записи
-    FILE *output = fopen(argv[1], "a");
+    FILE *output = fopen(output_file, "a");
     if (!output) {
         perror("fopen");
         munmap(shm, SHM_SIZE);
@@ -207,29 +258,53 @@ int main(int argc, char *argv[]) {
 
     printf("Loger demon start %s\n", argv[1]);
 
-    // Создаем поток для обработки ввода
-
     char buffer[1024];
     int last_pos = shm->tail;
 
     // Основной цикл демона
     while (running) {
-        // Если есть новые логи
-        while (last_pos != shm->head && running) {
-            format_log_entry(&shm->logs[last_pos], buffer, sizeof(buffer));
+        // Читаем только новые записи
+        while (shm->tail != shm->head) {
+            struct LogEntry *entry = &shm->logs[shm->tail];
             
-            // Записываем в файл
-            fputs(buffer, output);
-            fflush(output);
+            // Проверяем, нужно ли логировать эту запись
+            bool should_log = false;
+            
+            //Смотрим тип лога
+            if (log_file && (
+                entry->logType == LOG_OPEN ||
+                entry->logType == LOG_CLOSE ||
+                entry->logType == LOG_LSEEK ||
+                entry->logType == LOG_READ ||
+                entry->logType == LOG_WRITE)) {
+                should_log = true;
+            }
+            
+            if (log_memory && (
+                entry->logType == LOG_MALLOC ||
+                entry->logType == LOG_REALLOC ||
+                entry->logType == LOG_FREE)) {
+                should_log = true;
+            }
+            
+            // Проверяем валидность записи и флаги
+            if (should_log && 
+                (entry->timestamp.tv_sec != 0 || entry->timestamp.tv_nsec != 0)) {
+                format_log_entry(entry, buffer, sizeof(buffer));
+                
+                // Записываем в файл
+                fputs(buffer, output);
+                fflush(output);
+            }
             
             // Переходим к следующей записи
-            last_pos = (last_pos + 1) % 100;
+            shm->tail = (shm->tail + 1) % 100;
         }
         
-        // Небольшая пауза, чтобы не нагружать CPU
-        usleep(atoi(argv[2]) * 1000); // argv[2] ms
+        // Пауза
+        usleep(ms * 1000);
     }
-    
+        
 
     // Завершаем работу
     fclose(output);
