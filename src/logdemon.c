@@ -11,6 +11,8 @@
 #define SHM_NAME "/log_shm"
 #define SHM_SIZE (sizeof(struct LogEntry) * 100)
 
+#define DEBUG
+
 // Перечисление для статуса лога 
 //(успешный или нет (если не успешный, то код ошибки))
 typedef enum {
@@ -175,6 +177,10 @@ void print_usage(const char *program_name) {
 }
 
 int main(int argc, char *argv[]) {
+
+    #ifdef DEBUG
+        printf("Start\n");
+    #endif
     bool log_memory = false;
     bool log_file = false;
     
@@ -219,13 +225,25 @@ int main(int argc, char *argv[]) {
     const char *ms_str = argv[optind + 1];
     int ms = atoi(ms_str);
 
+    #ifdef DEBUG
+        printf("Arg OK\n");
+    #endif
 
     shm_unlink(SHM_NAME);
+    
+    #ifdef DEBUG
+        printf("Shm_unlink OK\n");
+    #endif
+
     int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open");
         return 1;
     }
+
+    #ifdef DEBUG
+        printf("shm_open ok\n");
+    #endif
 
     // Установить размер и инициализировать структуру
     if (ftruncate(shm_fd, SHM_SIZE) == -1) {
@@ -234,6 +252,10 @@ int main(int argc, char *argv[]) {
         shm_unlink(SHM_NAME);
         return 1;
     }
+
+    #ifdef DEBUG
+        printf("ftruncate ok\n");
+    #endif
 
     LogShm *shm = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
     if (shm == MAP_FAILED) {
@@ -246,6 +268,11 @@ int main(int argc, char *argv[]) {
     // Инициализация структуры
     shm->head = 0;
     shm->tail = 0;
+
+    #ifdef DEBUG
+        printf("mmap ok\n");
+    #endif
+
 
     // Открываем файл для записи
     FILE *output = fopen(output_file, "a");
