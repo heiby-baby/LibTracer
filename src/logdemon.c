@@ -104,9 +104,9 @@ typedef struct {
     struct LogEntry logs[100];
 } LogShm;
 
-
+// Функция для преобразования структуры в строковой формат для вывода в файл
 void format_log_entry(struct LogEntry *log, char *buffer, size_t buf_size) {
-    long sec = log->timestamp.tv_sec;
+    long sec = log->timestamp.tv_sec;               // 
     long msec = log->timestamp.tv_nsec / 1000000;
 
     switch (log->logType) {
@@ -220,9 +220,11 @@ int main(int argc, char *argv[]) {
         print_usage(argv[0]);
         return 1;
     }
-    
+    // Получаем имя файла из аргумента командной строки
     const char *output_file = argv[optind];
+    // Получаем частоту проверки буфера
     const char *ms_str = argv[optind + 1];
+    // Переводим в числовое значение
     int ms = atoi(ms_str);
 
     #ifdef DEBUG
@@ -284,14 +286,16 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Loger demon start %s\n", argv[1]);
-    //Создаём буфер, который будем записывать в файл
+    // Создаём буфер, который будем записывать в файл
     char buffer[1024];
+    // Указатель на последней новый элмент кольцового списка
     int last_pos = shm->tail;
 
     // Основной цикл демона (реализован кольцевой список)
     while (true) {
         // Читаем только новые записи
         while (shm->tail != shm->head) {
+            // Инициализируй 
             struct LogEntry *entry = &shm->logs[shm->tail];
             
             // Проверяем, нужно ли логировать эту запись
@@ -320,7 +324,11 @@ int main(int argc, char *argv[]) {
                 format_log_entry(entry, buffer, sizeof(buffer));
                 
                 // Записываем в файл
-                fputs(buffer, output);
+                if( EOF == fputs(buffer, output)){
+                    perror("fputs")
+                    exit(EXIT_FAILURE);
+                };
+                // Принудительно записываем в файл для актуализации логов и очистка буфера
                 fflush(output);
             }
             
@@ -332,7 +340,8 @@ int main(int argc, char *argv[]) {
         usleep(ms * 1000);
     }
         
-
+    // Вообще в текущих условиях сюда никогда не попадём
+    // Этот блок для 
     // Завершаем работу
     fclose(output);
     munmap(shm, SHM_SIZE);

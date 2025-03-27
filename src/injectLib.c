@@ -237,63 +237,57 @@ void create_log(Status status, LogType logType, ...) {
     log.status = status;
     va_list args;
     va_start(args, logType);
-    
+    // По типу аргументов заполняем структуру лога
     switch (logType) {
         case LOG_OPEN:
-            //Записываем имя функции open
-            strncpy(log.function, "open", sizeof(log.function));
-            // Считываем из списка аргументов
-            strncpy(log.open.filename, va_arg(args, const char*), sizeof(log.open.filename));
-            log.open.flags = va_arg(args, int);
-            log.open.file_descriptor = va_arg(args, int);
+            strncpy(log.function, "open", sizeof(log.function));                                // Имя функции open
+            strncpy(log.open.filename, va_arg(args, const char*), sizeof(log.open.filename));   // Имя файла
+            log.open.flags = va_arg(args, int);                                                 // Флаги при открытии
+            log.open.file_descriptor = va_arg(args, int);                                       // Дескриптор файла
             break;
         case LOG_CLOSE:
-            //Записываем имя функции close
-            strncpy(log.function, "close", sizeof(log.function));
-            log.close.file_descriptor = va_arg(args, int);
-            log.close.return_code = va_arg(args, int);
+            strncpy(log.function, "close", sizeof(log.function));                               // Имя функции close
+            log.close.file_descriptor = va_arg(args, int);                                      // Дескриптор файла
+            log.close.return_code = va_arg(args, int);                                          // Возвращаемое значение
             break;
         case LOG_LSEEK:
             //Записываем имя функции lseek        
-            strncpy(log.function, "lseek", sizeof(log.function));
-            log.lseek.file_descriptor = va_arg(args, int);
-            log.lseek.requested_offset = va_arg(args, off_t);
-            log.lseek.whence = va_arg(args, int);
-            log.lseek.resulted_offset = va_arg(args, off_t);
+            strncpy(log.function, "lseek", sizeof(log.function));                               // Имя функции lseek
+            log.lseek.file_descriptor = va_arg(args, int);                                      // Дeскриптор файла 
+            log.lseek.requested_offset = va_arg(args, off_t);                                   // Запрашиваемое смещение
+            log.lseek.whence = va_arg(args, int);                                               // Точка смещения    
+            log.lseek.resulted_offset = va_arg(args, off_t);                                    // Результат смещения
             break;
         case LOG_READ:
-            //Записываем имя функции read
-            strncpy(log.function, "read", sizeof(log.function));
-            log.read.file_descriptor = va_arg(args, int);
-            log.read.buffer_pointer = va_arg(args, void*);
-            log.read.count = va_arg(args, size_t);
-            log.read.bytes_read = va_arg(args, ssize_t);
+            strncpy(log.function, "read", sizeof(log.function));                                // Имя функции read
+            log.read.file_descriptor = va_arg(args, int);                                       // Дескриптор файла
+            log.read.buffer_pointer = va_arg(args, void*);                                      // Указатель на буфер
+            log.read.count = va_arg(args, size_t);                                              // Запрашиваемое кол-во байт для чтения
+            log.read.bytes_read = va_arg(args, ssize_t);                                        // Кол-во прочитанных байт
             break;
         case LOG_WRITE:
-            //Записываем имя функции write
-            strncpy(log.function, "write", sizeof(log.function));
-            log.write.file_descriptor = va_arg(args, int);
-            log.write.buffer_pointer = va_arg(args, void*);
-            log.write.count = va_arg(args, size_t);
-            log.write.bytes_written = va_arg(args, ssize_t);
+            strncpy(log.function, "write", sizeof(log.function));                               // Имя функции write                               
+            log.write.file_descriptor = va_arg(args, int);                                      // Файловый дескриптор
+            log.write.buffer_pointer = va_arg(args, void*);                                     // Указатель на буффер
+            log.write.count = va_arg(args, size_t);                                             // Количество байт для записи
+            log.write.bytes_written = va_arg(args, ssize_t);                                    // Кол-во записанных байт
             break;
         case LOG_MALLOC:
             //Записываем имя функции malloc
-            strncpy(log.function, "malloc", sizeof(log.function));
-            log.malloc.bytes_requested = va_arg(args, size_t);
-            log.malloc.new_mem_pointer = va_arg(args, void *);
+            strncpy(log.function, "malloc", sizeof(log.function));                              // Имя функии malloc
+            log.malloc.bytes_requested = va_arg(args, size_t);                                  // Запрошенное кол-во байт
+            log.malloc.new_mem_pointer = va_arg(args, void *);                                  // Указатель на точку памяти
             break;
         case LOG_REALLOC:
-            //Записываем имя функции realloc
-            strncpy(log.function, "realloc", sizeof(log.function));
-            log.realloc.bytes_requested = va_arg(args, size_t);
-            log.realloc.current_mem_pointer = va_arg(args, void *);
-            log.realloc.new_mem_pointer = va_arg(args, void*);
+            strncpy(log.function, "realloc", sizeof(log.function));                             // Имя функции realloc
+            log.realloc.bytes_requested = va_arg(args, size_t);                                 // Запрошенное кол-во байт
+            log.realloc.current_mem_pointer = va_arg(args, void *);                             // Указатель на участок памяти
+            log.realloc.new_mem_pointer = va_arg(args, void*);                                  // Указаьель на новый участок памяти
             break;
         case LOG_FREE:
             //Записываем имя функции free
-            strncpy(log.function, "free", sizeof(log.function));
-            log.free.mem_pointer = va_arg(args, void *);
+            strncpy(log.function, "free", sizeof(log.function));                                // Имя функции free
+            log.free.mem_pointer = va_arg(args, void *);                                        // Указатель на участок памяти
             break;
     }
     va_end(args);
