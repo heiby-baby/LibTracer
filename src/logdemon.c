@@ -104,7 +104,6 @@ typedef struct {
     struct LogEntry logs[100];
 } LogShm;
 
-int running = 1;
 
 void format_log_entry(struct LogEntry *log, char *buffer, size_t buf_size) {
     long sec = log->timestamp.tv_sec;
@@ -112,33 +111,33 @@ void format_log_entry(struct LogEntry *log, char *buffer, size_t buf_size) {
 
     switch (log->logType) {
         case LOG_OPEN:
-            snprintf(buffer, buf_size, "[%ld.%03ld] %s: filename='%s', flags=%d, fd=%d, status=%d\n",
+            snprintf(buffer, buf_size, "[%ld.%03ld] %s: filename='%s', flags=%d, file_descriptor=%d, status=%d\n",
                     sec, msec,
                     log->function, log->open.filename, log->open.flags, 
                     log->open.file_descriptor, log->status);
             break;
         case LOG_CLOSE:
-            snprintf(buffer, buf_size, "[%ld.%03ld] %s: fd=%d, ret=%d, status=%d\n",
+            snprintf(buffer, buf_size, "[%ld.%03ld] %s: file_descriptor=%d, return_code=%d, status=%d\n",
                     sec, msec,
                     log->function, log->close.file_descriptor, 
                     log->close.return_code, log->status);
             break;
         case LOG_LSEEK:
-            snprintf(buffer, buf_size, "[%ld.%03ld] %s: fd=%d, req_offset=%ld, whence=%d, res_offset=%ld, status=%d\n",
+            snprintf(buffer, buf_size, "[%ld.%03ld] %s: file_descriptor=%d, requested_offset=%ld, whence=%d, resulted_offset=%ld, status=%d\n",
                     sec, msec,
                     log->function, log->lseek.file_descriptor,
                     (long)log->lseek.requested_offset, log->lseek.whence,
                     (long)log->lseek.resulted_offset, log->status);
             break;
         case LOG_READ:
-            snprintf(buffer, buf_size, "[%ld.%03ld] %s: fd=%d, buf=%p, count=%zu, bytes_read=%zd, status=%d\n",
+            snprintf(buffer, buf_size, "[%ld.%03ld] %s: file_descriptor=%d, buffer=%p, count=%zu, bytes_read=%zd, status=%d\n",
                     sec, msec,
                     log->function, log->read.file_descriptor,
                     log->read.buffer_pointer, log->read.count, 
                     log->read.bytes_read, log->status);
             break;
         case LOG_WRITE:
-            snprintf(buffer, buf_size, "[%ld.%03ld] %s: fd=%d, buf=%p, count=%zu, bytes_written=%zd, status=%d\n",
+            snprintf(buffer, buf_size, "[%ld.%03ld] %s: file_descriptor=%d, buffer=%p, count=%zu, bytes_written=%zd, status=%d\n",
                     sec, msec,
                     log->function, log->write.file_descriptor,
                     log->write.buffer_pointer, log->write.count, 
@@ -235,8 +234,8 @@ int main(int argc, char *argv[]) {
         printf("Shm_unlink OK\n");
     #endif
 
-    int shm_fd = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
-    if (shm_fd == -1) {
+    int shm_file_descriptor = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
+    if (shm_file_descriptor == -1) {
         perror("shm_open");
         return 1;
     }
@@ -246,9 +245,9 @@ int main(int argc, char *argv[]) {
     #endif
 
     // Установить размер и инициализировать структуру
-    if (ftruncate(shm_fd, SHM_SIZE) == -1) {
+    if (ftruncate(shm_file_descriptor, SHM_SIZE) == -1) {
         perror("ftruncate");
-        close(shm_fd);
+        close(shm_file_descriptor);
         shm_unlink(SHM_NAME);
         return 1;
     }
@@ -257,10 +256,10 @@ int main(int argc, char *argv[]) {
         printf("ftruncate ok\n");
     #endif
 
-    LogShm *shm = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    LogShm *shm = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_file_descriptor, 0);
     if (shm == MAP_FAILED) {
         perror("mmap");
-        close(shm_fd);
+        close(shm_file_descriptor);
         shm_unlink(SHM_NAME);
         return 1;
     }
@@ -279,7 +278,7 @@ int main(int argc, char *argv[]) {
     if (!output) {
         perror("fopen");
         munmap(shm, SHM_SIZE);
-        close(shm_fd);
+        close(shm_file_descriptor);
         return 1;
     }
 
@@ -289,7 +288,7 @@ int main(int argc, char *argv[]) {
     int last_pos = shm->tail;
 
     // Основной цикл демона
-    while (running) {
+    while (true) {
         // Читаем только новые записи
         while (shm->tail != shm->head) {
             struct LogEntry *entry = &shm->logs[shm->tail];
@@ -336,7 +335,7 @@ int main(int argc, char *argv[]) {
     // Завершаем работу
     fclose(output);
     munmap(shm, SHM_SIZE);
-    close(shm_fd);
+    close(shm_file_descriptor);
     // Полностью очищаем SHM
     shm_unlink(SHM_NAME);
     
