@@ -325,7 +325,7 @@ int main(int argc, char *argv[]) {
                 
                 // Записываем в файл
                 if( EOF == fputs(buffer, output)){
-                    perror("fputs")
+                    perror("fputs");
                     exit(EXIT_FAILURE);
                 };
                 // Принудительно записываем в файл для актуализации логов и очистка буфера
