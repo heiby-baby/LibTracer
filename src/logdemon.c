@@ -11,7 +11,7 @@
 #define SHM_NAME "/log_shm"
 #define SHM_SIZE (sizeof(struct LogEntry) * 100)
 
-#define DEBUG
+//#define DEBUG
 
 // Перечисление для статуса лога 
 //(успешный или нет (если не успешный, то код ошибки))
@@ -190,6 +190,7 @@ int main(int argc, char *argv[]) {
         {0, 0, 0, 0}
     };
     
+    // Парсинг аргументов командной строки
     int opt;
     int option_index = 0;
     while ((opt = getopt_long(argc, argv, "mf", long_options, &option_index))) {
@@ -227,13 +228,13 @@ int main(int argc, char *argv[]) {
     #ifdef DEBUG
         printf("Arg OK\n");
     #endif
-
+    // Очищаем буфер разделяемой памяти (ошибку игнорируем)
     shm_unlink(SHM_NAME);
     
     #ifdef DEBUG
         printf("Shm_unlink OK\n");
     #endif
-
+    //Инициализируем разделяемую память
     int shm_file_descriptor = shm_open(SHM_NAME, O_CREAT | O_RDWR, 0666);
     if (shm_file_descriptor == -1) {
         perror("shm_open");
@@ -244,7 +245,7 @@ int main(int argc, char *argv[]) {
         printf("shm_open ok\n");
     #endif
 
-    // Установить размер и инициализировать структуру
+    // Устанавливаем размер разделяемой памяти
     if (ftruncate(shm_file_descriptor, SHM_SIZE) == -1) {
         perror("ftruncate");
         close(shm_file_descriptor);
@@ -255,7 +256,7 @@ int main(int argc, char *argv[]) {
     #ifdef DEBUG
         printf("ftruncate ok\n");
     #endif
-
+    // Маппируем адресное пространство разделяемой памяти
     LogShm *shm = mmap(NULL, SHM_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, shm_file_descriptor, 0);
     if (shm == MAP_FAILED) {
         perror("mmap");
@@ -283,11 +284,11 @@ int main(int argc, char *argv[]) {
     }
 
     printf("Loger demon start %s\n", argv[1]);
-
+    //Создаём буфер, который будем записывать в файл
     char buffer[1024];
     int last_pos = shm->tail;
 
-    // Основной цикл демона
+    // Основной цикл демона (реализован кольцевой список)
     while (true) {
         // Читаем только новые записи
         while (shm->tail != shm->head) {
